@@ -7,6 +7,7 @@ import org.lwjgl.opengl.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 // Singleton
 
 public class Window {
@@ -17,13 +18,13 @@ public class Window {
 
     private static Window window = null;
 
-    private Window (){
+    private Window(){
         this.height = 1080;
         this.width = 1920;
         this.title = "Test Engine";
     }
 
-    public static Window get (){
+    public static Window get(){
         if (Window.window == null){
             Window.window = new Window();
         }
@@ -31,14 +32,22 @@ public class Window {
         return Window.window;
     }
 
-    public void run (){
+    public void run(){
        System.out.println("Hello LWJGL version=" + Version.getVersion() + " !");
 
        init();
        loop();
+
+       // Free Memory
+       glfwFreeCallbacks(glfwWindow);
+       glfwDestroyWindow(glfwWindow);
+
+       // Terminate GLFW and free the error callback
+       glfwTerminate();
+       glfwSetErrorCallback(null).free();
     }
 
-    public void init (){
+    public void init(){
         // Setup an Error Callback
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -60,6 +69,12 @@ public class Window {
             throw new IllegalStateException("Failed to create the GLFW Window.");
         }
 
+        // Callbacks to Listeners
+        glfwSetCursorPosCallback(glfwWindow, MouseListener::mousePosCallback);
+        glfwSetMouseButtonCallback(glfwWindow, MouseListener::mouseButtonCallback);
+        glfwSetScrollCallback(glfwWindow, MouseListener::mouseScrollCallback);
+        glfwSetKeyCallback(glfwWindow, KeyListener::keyCallback);
+
         // Make the OpenGL context current
         glfwMakeContextCurrent(glfwWindow);
 
@@ -77,13 +92,26 @@ public class Window {
         GL.createCapabilities();
     }
 
-    public void loop (){
+    public void loop(){
         while (!glfwWindowShouldClose(glfwWindow)){
             // Poll Events
             glfwPollEvents();
 
             glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
+
+            // Testing Key and Mouse Listeners
+            if (KeyListener.isKeyPressed(GLFW_KEY_SPACE)){
+                System.out.println("Space Key is pressed");
+            }
+
+            if (MouseListener.mouseButtonDown(1)){
+                System.out.println("Mouse 1 is pressed");
+            }
+
+            if (MouseListener.mouseButtonDown(0)){
+                System.out.println("Mouse 0 is pressed");
+            }
 
             glfwSwapBuffers(glfwWindow);
         }
